@@ -25,9 +25,11 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
+          disableTransitionOnChange={false}
+          storageKey="shopverse-theme"
+          enableColorScheme
         >
           {children}
         </ThemeProvider>
