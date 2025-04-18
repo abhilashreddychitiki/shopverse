@@ -7,8 +7,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import Link from "next/link";
-import ModeToggle from "./mode-toggle";
-import UserButton from "./user-button";
+import ModeToggle from "@/components/shared/header/mode-toggle";
+import UserButton from "@/components/shared/header/user-button";
 
 const Menu = () => {
   return (
