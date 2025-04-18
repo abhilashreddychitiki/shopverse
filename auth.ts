@@ -1,28 +1,13 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { compareSync } from "bcrypt-ts-edge";
 import type { NextAuthConfig } from "next-auth";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { Pool } from "@neondatabase/serverless";
 
-// Edge-safe dynamic import
-const isEdge =
-  typeof process !== "undefined" && process.env.NEXT_RUNTIME === "edge";
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 
-// Don't import PrismaAdapter or PrismaClient directly if in edge runtime
-let PrismaAdapter: any = null;
-let prisma: any = null;
-
-if (!isEdge) {
-  const { PrismaClient } = await import("@prisma/client");
-  const { PrismaAdapter: PrismaAdapterImport } = await import(
-    "@auth/prisma-adapter"
-  );
-
-  prisma = new PrismaClient();
-  PrismaAdapter = PrismaAdapterImport;
-}
-
-export const config: NextAuthConfig = {
+export const config = {
   pages: {
     signIn: "/sign-in",
     error: "/sign-in",
@@ -31,7 +16,6 @@ export const config: NextAuthConfig = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,
   },
-  adapter: PrismaAdapter ? PrismaAdapter(prisma) : undefined,
   providers: [
     CredentialsProvider({
       credentials: {
@@ -39,57 +23,64 @@ export const config: NextAuthConfig = {
         password: { type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials || !prisma) return null;
+        if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findFirst({
-          where: { email: credentials.email },
-        });
+        try {
+          // Use direct SQL query instead of Prisma
+          const { rows } = await pool.query(
+            'SELECT id, email, password, name, role FROM "User" WHERE email = $1 LIMIT 1',
+            [credentials.email]
+          );
 
-        if (user && user.password) {
+          const user = rows[0];
+
+          if (!user?.password) return null;
+
           const isMatch = compareSync(credentials.password, user.password);
+
           if (isMatch) {
             return {
               id: user.id,
-              name: user.name,
               email: user.email,
+              name: user.name,
               role: user.role,
             };
           }
-        }
 
-        return null;
+          return null;
+        } catch (error) {
+          console.error("Auth error:", error);
+          return null;
+        }
       },
     }),
   ],
   callbacks: {
-    async session({ session, token }: any) {
-      session.user.id = token.id;
-      session.user.name = token.name;
-      session.user.role = token.role;
+    async session({ session, token }) {
+      if (session?.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+      }
       return session;
     },
-    async jwt({ token, user, session, trigger }: any) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
-        token.name = user.name;
         token.role = user.role;
-
-        if (user.name === "NO_NAME" && prisma) {
-          token.name = user.email!.split("@")[0];
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { name: token.name },
-          });
-        }
       }
 
-      if (trigger === "update" && session?.user.name) {
+      if (trigger === "update" && session?.user?.name) {
+        // Update user name in database
+        await pool.query('UPDATE "User" SET name = $1 WHERE id = $2', [
+          session.user.name,
+          token.id,
+        ]);
         token.name = session.user.name;
       }
 
       return token;
     },
   },
-};
+} satisfies NextAuthConfig;
 
 export const { auth, handlers, signIn, signOut } = NextAuth(config);
