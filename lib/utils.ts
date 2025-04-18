@@ -16,9 +16,15 @@ export function formatNumberWithDecimal(num: number): string {
 }
 
 // Round to 2 decimal places
-export function round2(num: number): number {
-  return Math.round(num * 100) / 100;
-}
+export const round2 = (value: number | string) => {
+  if (typeof value === "number") {
+    return Math.round((value + Number.EPSILON) * 100) / 100; // avoid rounding errors
+  } else if (typeof value === "string") {
+    return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+  } else {
+    throw new Error("value is not a number nor a string");
+  }
+};
 
 // Format Errors
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
