@@ -9,6 +9,26 @@ import { prisma } from "@/db/prisma";
 import { CartItem } from "@/types";
 import { Prisma } from "@prisma/client";
 import { convertToPlainObject, round2 } from "../utils";
+import crypto from "crypto";
+
+const initializeCart = () => {
+  const cookieStore = cookies();
+  let sessionCartId = cookieStore.get("sessionCartId")?.value;
+
+  if (!sessionCartId) {
+    sessionCartId = crypto.randomUUID();
+    cookieStore.set("sessionCartId", sessionCartId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+    });
+  }
+
+  return sessionCartId;
+};
+
 // Calculate cart price based on items
 const calcPrice = (items: z.infer<typeof cartItemSchema>[]) => {
   const itemsPrice = round2(
@@ -26,9 +46,7 @@ const calcPrice = (items: z.infer<typeof cartItemSchema>[]) => {
 };
 export const addItemToCart = async (data: CartItem) => {
   try {
-    // Check for session cart cookie
-    const sessionCartId = (await cookies()).get("sessionCartId")?.value;
-    if (!sessionCartId) throw new Error("Cart Session not found");
+    const sessionCartId = initializeCart();
 
     // Get session and user ID
     const session = await auth();
