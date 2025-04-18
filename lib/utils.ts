@@ -15,6 +15,11 @@ export function formatNumberWithDecimal(num: number): string {
   return decimal ? `${int}.${decimal.padEnd(2, "0")}` : `${int}.00`;
 }
 
+// Round to 2 decimal places
+export function round2(num: number): number {
+  return Math.round(num * 100) / 100;
+}
+
 // Format Errors
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function formatError(error: any): string {
