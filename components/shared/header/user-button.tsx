@@ -24,9 +24,9 @@ const UserButton = async () => {
       </Button>
     );
   }
+
   const firstInitial = session.user?.name?.charAt(0).toUpperCase() ?? "";
 
-  // Return user profile button when authenticated
   return (
     <div className="flex gap-2 items-center">
       <DropdownMenu>
