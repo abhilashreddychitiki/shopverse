@@ -11,6 +11,7 @@ import { CartItem } from "@/types";
 import { paypal } from "@/lib/paypal";
 import { revalidatePath } from "next/cache";
 import { PAGE_SIZE } from "../constants";
+import { Prisma } from "@prisma/client";
 
 type PaymentResult = {
   id: string;
@@ -251,6 +252,155 @@ export async function getOrderById(id: string) {
   }
 }
 
+type SalesDataType = {
+  month: string;
+  totalSales: number;
+}[];
+
+// Get sales data and order summary
+export async function getOrderSummary() {
+  try {
+    // Get counts for each resource
+    const ordersCount = await prisma.order.count();
+    const productsCount = await prisma.product.count();
+    const usersCount = await prisma.user.count();
+
+    // Calculate total sales
+    const totalSales = await prisma.order.aggregate({
+      _sum: { totalPrice: true },
+    });
+
+    // Get monthly sales
+    const salesDataRaw = await prisma.$queryRaw<
+      Array<{ month: string; totalSales: Prisma.Decimal }>
+    >`SELECT to_char("createdAt", 'MM/YY') as "month", sum("totalPrice") as "totalSales" FROM "Order" GROUP BY to_char("createdAt", 'MM/YY')`;
+
+    const salesData: SalesDataType = salesDataRaw.map((entry) => ({
+      month: entry.month,
+      totalSales: Number(entry.totalSales), // Convert Decimal to number
+    }));
+
+    // Get latest sales
+    const latestOrders = await prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { name: true } },
+      },
+      take: 6,
+    });
+
+    // Convert Decimal values to strings to avoid serialization issues
+    const serializedLatestOrders = latestOrders.map((order) => ({
+      ...order,
+      itemsPrice: String(order.itemsPrice),
+      shippingPrice: String(order.shippingPrice),
+      taxPrice: String(order.taxPrice),
+      totalPrice: String(order.totalPrice),
+    }));
+
+    return {
+      ordersCount,
+      productsCount,
+      usersCount,
+      totalSales: {
+        _sum: {
+          totalPrice: totalSales._sum.totalPrice
+            ? String(totalSales._sum.totalPrice)
+            : "0",
+        },
+      },
+      latestOrders: serializedLatestOrders,
+      salesData,
+    };
+  } catch (error) {
+    console.error("Error getting order summary:", error);
+    throw new Error(formatError(error));
+  }
+}
+
+// Get All Orders (Admin)
+export async function getAllOrders({
+  limit = PAGE_SIZE,
+  page,
+}: {
+  limit?: number;
+  page: number;
+}) {
+  try {
+    const data = await prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: (page - 1) * limit,
+      include: { user: { select: { name: true } } },
+    });
+
+    const dataCount = await prisma.order.count();
+
+    // Convert Decimal objects to strings to avoid serialization issues
+    const serializedData = data.map((order) => ({
+      ...order,
+      itemsPrice: String(order.itemsPrice),
+      shippingPrice: String(order.shippingPrice),
+      taxPrice: String(order.taxPrice),
+      totalPrice: String(order.totalPrice),
+    }));
+
+    return {
+      data: serializedData,
+      totalPages: Math.ceil(dataCount / limit),
+      currentPage: page,
+      totalOrders: dataCount,
+    };
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    throw new Error(formatError(error));
+  }
+}
+
+// Delete Order (Admin)
+export async function deleteOrder(orderId: string) {
+  try {
+    // Check if the order exists
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { orderItems: true },
+    });
+
+    if (!order) {
+      return { success: false, message: "Order not found" };
+    }
+
+    // Delete order items first (due to foreign key constraints)
+    await prisma.orderItem.deleteMany({
+      where: { orderId },
+    });
+
+    // Delete the order
+    await prisma.order.delete({
+      where: { id: orderId },
+    });
+
+    // Revalidate the admin orders page
+    revalidatePath("/admin/orders");
+
+    return { success: true, message: "Order deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    return { success: false, message: formatError(error) };
+  }
+}
+
+// Update Order To Paid By COD
+export async function updateOrderToPaidByCOD(orderId: string) {
+  try {
+    await updateOrderToPaid({ orderId });
+    revalidatePath(`/order/${orderId}`);
+    return { success: true, message: "Order paid successfully" };
+  } catch (err) {
+    return { success: false, message: formatError(err) };
+  }
+}
+
 // Approve Paypal Order
 export async function approvePayPalOrder(
   orderId: string,
@@ -348,5 +498,34 @@ export async function getMyOrders({
   } catch (error) {
     console.error("Error fetching orders:", error);
     throw new Error(formatError(error));
+  }
+}
+
+// Update Order To Delivered
+export async function deliverOrder(orderId: string) {
+  try {
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+      },
+    });
+
+    if (!order) throw new Error("Order not found");
+    if (!order.isPaid) throw new Error("Order is not paid");
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        isDelivered: true,
+        deliveredAt: new Date(),
+      },
+    });
+
+    revalidatePath(`/order/${orderId}`);
+    revalidatePath(`/admin/orders`);
+
+    return { success: true, message: "Order delivered successfully" };
+  } catch (err) {
+    return { success: false, message: formatError(err) };
   }
 }

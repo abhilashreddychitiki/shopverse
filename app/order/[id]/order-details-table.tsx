@@ -22,16 +22,24 @@ import {
 import {
   approvePayPalOrder,
   createPayPalOrder,
+  deliverOrder,
+  updateOrderToPaidByCOD,
 } from "@/lib/actions/order.actions";
 import { toast } from "sonner";
+import { useTransition } from "react";
+import { Button } from "@/components/ui/button";
 
 const OrderDetailsTable = ({
   order,
   paypalClientId,
+  isAdmin,
 }: {
   order: Order;
   paypalClientId: string;
+  isAdmin: boolean;
 }) => {
+  const [isPending, startTransition] = useTransition();
+  
   const {
     shippingAddress,
     orderItems,
@@ -112,6 +120,56 @@ const OrderDetailsTable = ({
           }}
         />
       </>
+    );
+  };
+
+  // Button To mark the order as paid
+  const MarkAsPaidButton = () => {
+    return (
+      <Button
+        type="button"
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            const res = await updateOrderToPaidByCOD(order.id);
+            if (res.success) {
+              toast.success(res.message);
+              // Refresh the page to show updated status
+              window.location.reload();
+            } else {
+              toast.error(res.message);
+            }
+          })
+        }
+        className="w-full mt-4"
+      >
+        {isPending ? "Processing..." : "Mark As Paid"}
+      </Button>
+    );
+  };
+
+  // Button To mark the order as delivered
+  const MarkAsDeliveredButton = () => {
+    return (
+      <Button
+        type="button"
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            const res = await deliverOrder(order.id);
+            if (res.success) {
+              toast.success(res.message);
+              // Refresh the page to show updated status
+              window.location.reload();
+            } else {
+              toast.error(res.message);
+            }
+          })
+        }
+        className="w-full mt-4"
+      >
+        {isPending ? "Processing..." : "Mark As Delivered"}
+      </Button>
     );
   };
 
@@ -234,6 +292,15 @@ const OrderDetailsTable = ({
                 <div>Total</div>
                 <div>{formatCurrency(totalPrice)}</div>
               </div>
+              
+              {/* Admin Actions */}
+              {isAdmin && !isPaid && (paymentMethod === "COD" || paymentMethod === "CashOnDelivery") && (
+                <MarkAsPaidButton />
+              )}
+              
+              {isAdmin && isPaid && !isDelivered && (
+                <MarkAsDeliveredButton />
+              )}
             </CardContent>
           </Card>
         </div>
