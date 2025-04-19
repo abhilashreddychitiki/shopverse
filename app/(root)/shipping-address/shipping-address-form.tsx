@@ -32,9 +32,15 @@ const ShippingAddressForm = ({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // Ensure defaultValues are always defined by merging with shippingAddressDefaultValues
+  const defaultValues = {
+    ...shippingAddressDefaultValues,
+    ...(address || {}),
+  };
+
   const form = useForm<z.infer<typeof shippingAddressSchema>>({
     resolver: zodResolver(shippingAddressSchema),
-    defaultValues: address || shippingAddressDefaultValues,
+    defaultValues,
   });
 
   const onSubmit: SubmitHandler<z.infer<typeof shippingAddressSchema>> = async (

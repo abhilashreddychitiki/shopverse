@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Keep the matcher for performance, but let auth handle the protection
 export const config = {
   matcher: [
     "/shipping-address",
@@ -14,16 +15,6 @@ export const config = {
 };
 
 export async function middleware(request: NextRequest) {
-  // Check for session token in cookies
-  const sessionToken =
-    request.cookies.get("next-auth.session-token")?.value ||
-    request.cookies.get("__Secure-next-auth.session-token")?.value;
-
-  if (!sessionToken) {
-    const url = new URL("/sign-in", request.url);
-    url.searchParams.set("callbackUrl", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
+  // Remove protection logic and just pass through
   return NextResponse.next();
 }

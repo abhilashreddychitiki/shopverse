@@ -13,7 +13,6 @@ export const metadata: Metadata = {
 const ShippingAddressPage = async () => {
   const session = await auth();
 
-  // Redirect to sign in if not authenticated
   if (!session?.user?.id) {
     redirect("/sign-in?callbackUrl=/shipping-address");
   }

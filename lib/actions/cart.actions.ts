@@ -11,13 +11,13 @@ import { Prisma } from "@prisma/client";
 import { convertToPlainObject, round2 } from "../utils";
 import crypto from "crypto";
 
-const initializeCart = () => {
+const initializeCart = async () => {
   const cookieStore = cookies();
-  let sessionCartId = cookieStore.get("sessionCartId")?.value;
+  let sessionCartId = await cookieStore.get("sessionCartId")?.value;
 
   if (!sessionCartId) {
     sessionCartId = crypto.randomUUID();
-    cookieStore.set("sessionCartId", sessionCartId, {
+    await cookieStore.set("sessionCartId", sessionCartId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -46,7 +46,7 @@ const calcPrice = (items: z.infer<typeof cartItemSchema>[]) => {
 };
 export const addItemToCart = async (data: CartItem) => {
   try {
-    const sessionCartId = initializeCart();
+    const sessionCartId = await initializeCart();
 
     // Get session and user ID
     const session = await auth();
@@ -122,12 +122,13 @@ export const addItemToCart = async (data: CartItem) => {
 };
 export async function getMyCart() {
   // Check for session cart cookie
-  const sessionCartId = (await cookies()).get("sessionCartId")?.value;
+  const cookieStore = cookies();
+  const sessionCartId = await cookieStore.get("sessionCartId")?.value;
   if (!sessionCartId) return undefined;
 
   // Get session and user ID
   const session = await auth();
-  const userId = session?.user.id;
+  const userId = session?.user?.id;
 
   // Get user cart from database
   const cart = await prisma.cart.findFirst({
@@ -150,7 +151,7 @@ export async function getMyCart() {
 export async function removeItemFromCart(productId: string) {
   try {
     // Get session cart id
-    const sessionCartId = (await cookies()).get("sessionCartId")?.value;
+    const sessionCartId = await cookies().get("sessionCartId")?.value;
     if (!sessionCartId) throw new Error("Cart Session not found");
 
     // Get product
