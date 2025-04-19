@@ -10,6 +10,7 @@ import { prisma } from "@/db/prisma";
 import { CartItem } from "@/types";
 import { paypal } from "@/lib/paypal";
 import { revalidatePath } from "next/cache";
+import { PAGE_SIZE } from "../constants";
 
 type PaymentResult = {
   id: string;
@@ -291,5 +292,61 @@ export async function approvePayPalOrder(
     };
   } catch (err) {
     return { success: false, message: formatError(err) };
+  }
+}
+
+// Get User Orders
+export async function getMyOrders({
+  limit = PAGE_SIZE,
+  page,
+}: {
+  limit?: number;
+  page: number;
+}) {
+  try {
+    const session = await auth();
+    if (!session) throw new Error("User is not authenticated");
+
+    // Make sure we have a user ID
+    if (!session.user?.id) throw new Error("User ID not found");
+
+    // Get orders with pagination
+    const data = await prisma.order.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: (page - 1) * limit,
+      include: {
+        orderItems: true,
+      },
+    });
+
+    // Count total orders for pagination
+    const dataCount = await prisma.order.count({
+      where: { userId: session.user.id },
+    });
+
+    // Convert Decimal objects to strings to avoid serialization issues
+    const serializedData = data.map((order) => ({
+      ...order,
+      itemsPrice: String(order.itemsPrice),
+      shippingPrice: String(order.shippingPrice),
+      taxPrice: String(order.taxPrice),
+      totalPrice: String(order.totalPrice),
+      orderItems: order.orderItems.map((item) => ({
+        ...item,
+        price: String(item.price),
+      })),
+    }));
+
+    return {
+      data: serializedData,
+      totalPages: Math.ceil(dataCount / limit),
+      currentPage: page,
+      totalOrders: dataCount,
+    };
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    throw new Error(formatError(error));
   }
 }
