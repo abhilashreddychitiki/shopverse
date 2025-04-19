@@ -67,3 +67,28 @@ export function formatCurrency(amount: number | string | null) {
     return "NaN";
   }
 }
+
+// Format ID to be more readable
+export function formatId(id: string) {
+  return id.slice(0, 8);
+}
+
+// Format date and time
+export function formatDateTime(date: Date) {
+  const formattedDate = new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+  const formattedTime = new Date(date).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return {
+    date: formattedDate,
+    time: formattedTime,
+    dateTime: `${formattedDate} at ${formattedTime}`,
+  };
+}
