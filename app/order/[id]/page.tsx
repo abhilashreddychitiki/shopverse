@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import OrderDetailsTable from "./order-details-table";
+import Stripe from "stripe";
 
 export const metadata: Metadata = {
   title: "Order Details",
@@ -19,6 +20,21 @@ export default async function OrderPage(props: {
 
   const params = await props.params;
   const order = await getOrderById(params.id);
+
+  let client_secret = null;
+
+  // Check if using Stripe and not paid
+  if (order && order.paymentMethod === "Stripe" && !order.isPaid) {
+    // Initialize Stripe instance
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+    // Create a new payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(Number(order.totalPrice) * 100),
+      currency: "USD",
+      metadata: { orderId: order.id },
+    });
+    client_secret = paymentIntent.client_secret;
+  }
   if (!order) {
     return (
       <div className="container mx-auto py-10">
@@ -54,6 +70,7 @@ export default async function OrderPage(props: {
           },
         }}
         paypalClientId={process.env.PAYPAL_CLIENT_ID || "sb"}
+        stripeClientSecret={client_secret}
         isAdmin={isAdmin}
       />
     </div>
