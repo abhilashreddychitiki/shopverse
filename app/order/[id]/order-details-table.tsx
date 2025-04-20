@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
-import { Order } from "@/types";
+import { Order, PaymentResult } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -36,7 +36,7 @@ const OrderDetailsTable = ({
   isAdmin,
   stripeClientSecret,
 }: {
-  order: Order;
+  order: Omit<Order, "paymentResult"> & { paymentResult?: PaymentResult };
   paypalClientId: string;
   isAdmin: boolean;
   stripeClientSecret: string | null;

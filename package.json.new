@@ -11,7 +11,7 @@
     "seed": "tsx ./db/seed",
     "type-check": "tsc --project tsconfig.build.json --noEmit",
     "test-script": "echo This is a test script",
-    "email": "cp .env ./node_modules/react-email && npx react-email dev --dir email --port 3001"
+    "email": "node preview-email.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",

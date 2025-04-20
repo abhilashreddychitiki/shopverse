@@ -7,13 +7,15 @@ import { getMyCart } from "./cart.actions";
 import { getUserById } from "./user.actions";
 import { insertOrderSchema } from "../validator";
 import { prisma } from "@/db/prisma";
-import { CartItem } from "@/types";
+import { CartItem, PaymentResult, ShippingAddress } from "@/types";
 import { paypal } from "@/lib/paypal";
 import { revalidatePath } from "next/cache";
 import { PAGE_SIZE } from "../constants";
 import { Prisma } from "@prisma/client";
+import { sendPurchaseReceipt } from "@/email";
 
-type PaymentResult = {
+// Local type definition for internal use
+type PaymentResultType = {
   id: string;
   status: string;
   email_address: string;
@@ -129,7 +131,7 @@ export async function updateOrderToPaid({
   paymentResult,
 }: {
   orderId: string;
-  paymentResult?: PaymentResult;
+  paymentResult?: PaymentResultType;
 }) {
   // Find the order in the database and include the order items
   const order = await prisma.order.findFirst({
@@ -178,6 +180,31 @@ export async function updateOrderToPaid({
 
   if (!updatedOrder) {
     throw new Error("Order not found");
+  }
+
+  // Send the purchase receipt email with the updated order
+  try {
+    // Convert Decimal objects to strings to avoid serialization issues
+    const serializedOrder = {
+      ...updatedOrder,
+      itemsPrice: String(updatedOrder.itemsPrice),
+      shippingPrice: String(updatedOrder.shippingPrice),
+      taxPrice: String(updatedOrder.taxPrice),
+      totalPrice: String(updatedOrder.totalPrice),
+      orderItems: updatedOrder.orderItems.map((item) => ({
+        ...item,
+        price: String(item.price),
+      })),
+      shippingAddress: updatedOrder.shippingAddress as ShippingAddress,
+      paymentResult: updatedOrder.paymentResult as PaymentResult,
+    };
+
+    await sendPurchaseReceipt({
+      order: serializedOrder,
+    });
+  } catch (error) {
+    console.error("Failed to send purchase receipt email:", error);
+    // Don't throw the error as we don't want to fail the order update if email fails
   }
 }
 
@@ -443,7 +470,7 @@ export async function approvePayPalOrder(
     const captureData = await paypal.capturePayment(data.orderID);
     if (
       !captureData ||
-      captureData.id !== (order.paymentResult as PaymentResult)?.id ||
+      captureData.id !== (order.paymentResult as PaymentResultType)?.id ||
       captureData.status !== "COMPLETED"
     )
       throw new Error("Error in paypal payment");
