@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { compareSync } from "bcrypt-ts-edge";
 import type { NextAuthConfig } from "next-auth";
@@ -38,7 +39,10 @@ export const config = {
 
           if (!user?.password) return null;
 
-          const isMatch = compareSync(credentials.password, user.password);
+          const isMatch = compareSync(
+            credentials.password.toString(),
+            user.password?.toString() || ""
+          );
 
           if (isMatch) {
             return {

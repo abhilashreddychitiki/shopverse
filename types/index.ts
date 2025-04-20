@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-wrapper-object-types */
 import { z } from "zod";
 import {
   cartItemSchema,

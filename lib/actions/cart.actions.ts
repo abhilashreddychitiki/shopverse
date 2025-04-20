@@ -13,11 +13,11 @@ import crypto from "crypto";
 
 const initializeCart = async () => {
   const cookieStore = cookies();
-  let sessionCartId = await cookieStore.get("sessionCartId")?.value;
+  let sessionCartId = (await cookieStore).get("sessionCartId")?.value;
 
   if (!sessionCartId) {
     sessionCartId = crypto.randomUUID();
-    await cookieStore.set("sessionCartId", sessionCartId, {
+    (await cookieStore).set("sessionCartId", sessionCartId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -123,7 +123,7 @@ export const addItemToCart = async (data: CartItem) => {
 export async function getMyCart() {
   // Check for session cart cookie
   const cookieStore = cookies();
-  const sessionCartId = await cookieStore.get("sessionCartId")?.value;
+  const sessionCartId = (await cookieStore).get("sessionCartId")?.value;
   if (!sessionCartId) return undefined;
 
   // Get session and user ID
@@ -151,7 +151,7 @@ export async function getMyCart() {
 export async function removeItemFromCart(productId: string) {
   try {
     // Get session cart id
-    const sessionCartId = await cookies().get("sessionCartId")?.value;
+    const sessionCartId = (await cookies()).get("sessionCartId")?.value;
     if (!sessionCartId) throw new Error("Cart Session not found");
 
     // Get product
