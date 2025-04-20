@@ -103,24 +103,24 @@ export async function getAllProducts({
   const ratingFilter =
     rating && rating !== "all" ? { rating: { gte: Number(rating) } } : {};
 
-  // Determine sort order
-  let orderBy = {};
-  if (sort === "lowest") orderBy = { price: "asc" };
-  else if (sort === "highest") orderBy = { price: "desc" };
-  else if (sort === "toprated") orderBy = { rating: "desc" };
-  else orderBy = { createdAt: "desc" }; // default to newest
-
   // Get products with pagination
   const data = await prisma.product.findMany({
     where: {
       ...queryFilter,
       ...categoryFilter,
-      ...priceFilter,
       ...ratingFilter,
+      ...priceFilter,
     },
+    orderBy:
+      sort === "lowest"
+        ? { price: "asc" }
+        : sort === "highest"
+        ? { price: "desc" }
+        : sort === "rating"
+        ? { rating: "desc" }
+        : { createdAt: "desc" },
     skip: (page - 1) * limit,
     take: limit,
-    orderBy,
   });
 
   // Get total count for pagination
