@@ -22,20 +22,34 @@ export const metadata: Metadata = {
 const AdminOrdersPage = async (props: {
   searchParams: Promise<{
     page?: string;
+    query?: string;
   }>;
 }) => {
   await requireAdmin();
   const searchParams = await props.searchParams;
-  const { page = "1" } = searchParams;
+  const { page = "1", query = "" } = searchParams;
 
   const orders = await getAllOrders({
     page: Number(page),
+    query,
   });
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="h2-bold">Orders</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="h2-bold">Orders</h2>
+          {query && (
+            <div>
+              Filtered by <i>&quot;{query}&quot;</i>{" "}
+              <Link href={`/admin/orders`}>
+                <Button variant="outline" size="sm">
+                  Remove Filter
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
         <div className="text-muted-foreground">
           Total Orders: <span className="font-bold">{orders.totalOrders}</span>
         </div>

@@ -178,21 +178,46 @@ export async function updateProfile({ name }: { name: string }) {
 export async function getAllUsers({
   limit = PAGE_SIZE,
   page,
+  query,
 }: {
   limit?: number;
   page: number;
+  query?: string;
 }) {
+  // Build where conditions based on filters
+  const where: Record<string, any> = {};
+
+  // Add name or email search if query is provided
+  if (query) {
+    where.OR = [
+      {
+        name: {
+          contains: query,
+          mode: "insensitive", // Case-insensitive search
+        },
+      },
+      {
+        email: {
+          contains: query,
+          mode: "insensitive", // Case-insensitive search
+        },
+      },
+    ];
+  }
+
   const data = await prisma.user.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     take: limit,
     skip: (page - 1) * limit,
   });
 
-  const dataCount = await prisma.user.count();
+  const dataCount = await prisma.user.count({ where });
 
   return {
     data,
     totalPages: Math.ceil(dataCount / limit),
+    totalUsers: dataCount,
   };
 }
 

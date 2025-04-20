@@ -322,19 +322,45 @@ export async function getOrderSummary() {
 export async function getAllOrders({
   limit = PAGE_SIZE,
   page,
+  query,
 }: {
   limit?: number;
   page: number;
+  query?: string;
 }) {
   try {
+    // Build where conditions based on filters
+    const where: Record<string, any> = {};
+
+    // Add search if query is provided
+    if (query) {
+      where.OR = [
+        {
+          user: {
+            name: {
+              contains: query,
+              mode: "insensitive", // Case-insensitive search
+            },
+          },
+        },
+        {
+          id: {
+            contains: query,
+            mode: "insensitive", // Case-insensitive search
+          },
+        },
+      ];
+    }
+
     const data = await prisma.order.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       take: limit,
       skip: (page - 1) * limit,
       include: { user: { select: { name: true } } },
     });
 
-    const dataCount = await prisma.order.count();
+    const dataCount = await prisma.order.count({ where });
 
     // Convert Decimal objects to strings to avoid serialization issues
     const serializedData = data.map((order) => ({
