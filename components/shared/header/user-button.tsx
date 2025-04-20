@@ -1,5 +1,6 @@
+"use client";
+
 import Link from "next/link";
-import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { UserIcon } from "lucide-react";
 import {
@@ -9,10 +10,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { signOutUser } from "@/lib/actions/user.actions";
+import { signOut, useSession } from "next-auth/react";
 
-const UserButton = async () => {
-  const session = await auth();
+const UserButton = () => {
+  const { data: session } = useSession();
 
   if (!session) {
     return (
@@ -70,14 +71,13 @@ const UserButton = async () => {
             </DropdownMenuItem>
           )}
           <DropdownMenuItem className="p-0 mb-1">
-            <form action={signOutUser} className="w-full">
-              <Button
-                className="w-full py-4 px-2 h-4 justify-start"
-                variant="ghost"
-              >
-                Sign Out
-              </Button>
-            </form>
+            <Button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="w-full py-4 px-2 h-4 justify-start"
+              variant="ghost"
+            >
+              Sign Out
+            </Button>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

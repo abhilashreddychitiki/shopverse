@@ -34,7 +34,7 @@ export async function signInWithCredentials(
   }
 }
 export async function signOutUser() {
-  await signOut();
+  await signOut({ redirectTo: "/" });
 }
 export async function signUp(_prevState: unknown, formData: FormData) {
   try {
