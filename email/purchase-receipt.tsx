@@ -12,9 +12,16 @@ import {
   Tailwind,
   Text,
 } from "@react-email/components";
-import { formatCurrency } from "@/lib/utils";
-import { Order } from "@/types";
-import sampleData from "@/db/sample-data";
+// Import formatCurrency directly to avoid module resolution issues
+const formatCurrency = (value: string | number) => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Number(value));
+};
+
+// Import only the types we need
+import type { Order } from "@/types";
 
 type OrderInformationProps = {
   order: Order;
@@ -106,11 +113,11 @@ export default function PurchaseReceiptEmail({ order }: { order: Order }) {
 // Preview props for testing the email template
 PurchaseReceiptEmail.PreviewProps = {
   order: {
-    id: crypto.randomUUID(),
+    id: "123456789",
     userId: "123",
     user: {
       name: "John Doe",
-      email: "bS8Rn@example.com",
+      email: "example@example.com",
     },
     paymentMethod: "Stripe",
     shippingAddress: {
@@ -125,15 +132,26 @@ PurchaseReceiptEmail.PreviewProps = {
     taxPrice: "10",
     shippingPrice: "10",
     itemsPrice: "80",
-    orderItems: sampleData.products.map((x) => ({
-      name: x.name,
-      orderId: "123",
-      productId: "123",
-      slug: x.slug,
-      qty: x.stock,
-      image: x.images[0],
-      price: x.price,
-    })),
+    orderItems: [
+      {
+        name: "Sample Product 1",
+        orderId: "123",
+        productId: "123",
+        slug: "sample-product-1",
+        qty: 2,
+        image: "/images/sample-product-1.jpg",
+        price: "29.99",
+      },
+      {
+        name: "Sample Product 2",
+        orderId: "123",
+        productId: "456",
+        slug: "sample-product-2",
+        qty: 1,
+        image: "/images/sample-product-2.jpg",
+        price: "49.99",
+      },
+    ],
     isDelivered: true,
     deliveredAt: new Date(),
     isPaid: true,
@@ -142,7 +160,7 @@ PurchaseReceiptEmail.PreviewProps = {
       id: "123",
       status: "succeeded",
       pricePaid: "12",
-      email_address: "bS8Rn@example.com",
+      email_address: "example@example.com",
     },
   },
 } satisfies OrderInformationProps;
