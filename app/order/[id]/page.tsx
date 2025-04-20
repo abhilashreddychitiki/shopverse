@@ -26,7 +26,9 @@ export default async function OrderPage(props: {
   // Check if using Stripe and not paid
   if (order && order.paymentMethod === "Stripe" && !order.isPaid) {
     // Initialize Stripe instance
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+      apiVersion: "2025-03-31.basil", // Specify the Stripe API version
+    });
     // Create a new payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(Number(order.totalPrice) * 100),

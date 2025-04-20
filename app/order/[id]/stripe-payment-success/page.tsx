@@ -1,14 +1,12 @@
-import { Metadata } from 'next';
-import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
-import Stripe from 'stripe';
-import { getOrderById } from '@/lib/actions/order.actions';
-import { Button } from '@/components/ui/button';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+import { Metadata } from "next";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import Stripe from "stripe";
+import { getOrderById } from "@/lib/actions/order.actions";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: 'Stripe Payment Success',
+  title: "Stripe Payment Success",
 };
 
 const SuccessPage = async (props: {
@@ -23,6 +21,11 @@ const SuccessPage = async (props: {
   const order = await getOrderById(id);
   if (!order) notFound();
 
+  // Initialize Stripe
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+    apiVersion: "2025-03-31.basil", // Specify the Stripe API version
+  });
+
   // Retrieve the payment intent
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
@@ -35,14 +38,14 @@ const SuccessPage = async (props: {
   }
 
   // Check if the payment intent is successful
-  const isSuccess = paymentIntent.status === 'succeeded';
+  const isSuccess = paymentIntent.status === "succeeded";
 
   if (!isSuccess) return redirect(`/order/${id}`);
 
   return (
-    <div className='max-w-4xl w-full mx-auto space-y-8'>
-      <div className='flex flex-col gap-6 items-center '>
-        <h1 className='h1-bold'>Thanks for your purchase</h1>
+    <div className="max-w-4xl w-full mx-auto space-y-8">
+      <div className="flex flex-col gap-6 items-center ">
+        <h1 className="h1-bold">Thanks for your purchase</h1>
         <div>We are now processing your order.</div>
         <Button asChild>
           <Link href={`/order/${id}`}>View order</Link>
