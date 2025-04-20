@@ -5,12 +5,24 @@ import { LATEST_PRODUCTS_LIMIT, PAGE_SIZE } from "../constants";
 import { revalidatePath } from "next/cache";
 import { insertProductSchema, updateProductSchema } from "../validator";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 // Get the latest products
 export async function getLatestProducts() {
   const data = await prisma.product.findMany({
     take: LATEST_PRODUCTS_LIMIT,
     orderBy: { createdAt: "desc" },
+  });
+
+  return convertToPlainObject(data);
+}
+
+// Get featured products
+export async function getFeaturedProducts() {
+  const data = await prisma.product.findMany({
+    where: { isFeatured: true },
+    orderBy: { createdAt: "desc" },
+    take: 4,
   });
 
   return convertToPlainObject(data);
@@ -34,44 +46,92 @@ export async function getProductById(productId: string) {
   return convertToPlainObject(data);
 }
 
+// Get product categories
+export async function getAllCategories() {
+  const data = await prisma.product.groupBy({
+    by: ["category"],
+    _count: true,
+  });
+
+  return data;
+}
+
 // Get all products
 export async function getAllProducts({
   query,
   limit = PAGE_SIZE,
   page,
   category,
+  price,
+  rating,
+  sort,
 }: {
   query: string;
+  category: string;
   limit?: number;
   page: number;
-  category: string;
+  price?: string;
+  rating?: string;
+  sort?: string;
 }) {
-  // Build where conditions based on filters
-  const where: Record<string, any> = {};
+  // Filter by query
+  const queryFilter: Prisma.ProductWhereInput =
+    query && query !== "all"
+      ? {
+          name: {
+            contains: query,
+            mode: "insensitive",
+          } as Prisma.StringFilter,
+        }
+      : {};
 
-  // Add name search if query is provided
-  if (query) {
-    where.name = {
-      contains: query,
-      mode: "insensitive", // Case-insensitive search
-    };
-  }
+  // Filter by category
+  const categoryFilter = category && category !== "all" ? { category } : {};
 
-  // Add category filter if provided
-  if (category) {
-    where.category = category;
-  }
+  // Filter by price
+  const priceFilter: Prisma.ProductWhereInput =
+    price && price !== "all"
+      ? {
+          price: {
+            gte: Number(price.split("-")[0]),
+            lte: Number(price.split("-")[1]),
+          },
+        }
+      : {};
+
+  // Filter by rating
+  const ratingFilter =
+    rating && rating !== "all" ? { rating: { gte: Number(rating) } } : {};
+
+  // Determine sort order
+  let orderBy = {};
+  if (sort === "lowest") orderBy = { price: "asc" };
+  else if (sort === "highest") orderBy = { price: "desc" };
+  else if (sort === "toprated") orderBy = { rating: "desc" };
+  else orderBy = { createdAt: "desc" }; // default to newest
 
   // Get products with pagination
   const data = await prisma.product.findMany({
-    where,
+    where: {
+      ...queryFilter,
+      ...categoryFilter,
+      ...priceFilter,
+      ...ratingFilter,
+    },
     skip: (page - 1) * limit,
     take: limit,
-    orderBy: { createdAt: "desc" },
+    orderBy,
   });
 
   // Get total count for pagination
-  const dataCount = await prisma.product.count({ where });
+  const dataCount = await prisma.product.count({
+    where: {
+      ...queryFilter,
+      ...categoryFilter,
+      ...priceFilter,
+      ...ratingFilter,
+    },
+  });
 
   // Return products and pagination info
   return {

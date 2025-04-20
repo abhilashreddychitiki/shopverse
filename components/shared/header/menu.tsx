@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import ModeToggle from "@/components/shared/header/mode-toggle";
 import UserButton from "@/components/shared/header/user-button";
+import Search from "./search";
 
 const Menu = () => {
   return (
@@ -31,6 +32,9 @@ const Menu = () => {
             </SheetTrigger>
             <SheetContent className="flex flex-col items-start">
               <SheetTitle>Menu</SheetTitle>
+              <div className="mt-10">
+                <Search />
+              </div>
               <ModeToggle />
               <Button asChild variant="ghost">
                 <Link href="/cart">
