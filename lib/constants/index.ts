@@ -23,4 +23,17 @@ export const shippingAddressDefaultValues = {
   country: "",
 };
 
-export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 10;
+export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 2; // Set to 2 for testing pagination
+
+export const productDefaultValues = {
+  name: "",
+  slug: "",
+  category: "",
+  brand: "",
+  description: "",
+  price: "0",
+  stock: 0,
+  images: [],
+  isFeatured: false,
+  banner: null,
+};

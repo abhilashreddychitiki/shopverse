@@ -1,18 +1,21 @@
-import { Metadata } from 'next';
-import { requireAdmin } from '@/lib/auth-guard';
+import { Metadata } from "next";
+import { requireAdmin } from "@/lib/auth-guard";
+import ProductForm from "@/components/shared/admin/product-form";
 
 export const metadata: Metadata = {
-  title: 'Create Product',
+  title: "Create Product",
 };
 
 const CreateProductPage = async () => {
   await requireAdmin();
-  
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Create Product</h1>
-      <p>Create product page coming soon...</p>
-    </div>
+    <>
+      <h2 className="h2-bold">Create Product</h2>
+      <div className="my-8">
+        <ProductForm type="Create" />
+      </div>
+    </>
   );
 };
 

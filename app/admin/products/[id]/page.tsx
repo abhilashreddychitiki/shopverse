@@ -1,20 +1,28 @@
-import { Metadata } from 'next';
-import { requireAdmin } from '@/lib/auth-guard';
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { requireAdmin } from "@/lib/auth-guard";
+
+import ProductForm from "@/components/shared/admin/product-form";
+import { getProductById } from "@/lib/actions/product.actions";
 
 export const metadata: Metadata = {
-  title: 'Edit Product',
+  title: "Update product",
 };
 
-const EditProductPage = async ({ params }: { params: { id: string } }) => {
+const UpdateProductPage = async ({ params }: { params: { id: string } }) => {
   await requireAdmin();
-  
+  const { id } = params;
+
+  const product = await getProductById(id);
+
+  if (!product) return notFound();
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Edit Product</h1>
-      <p>Product ID: {params.id}</p>
-      <p>Edit product page coming soon...</p>
+    <div className="space-y-8 max-w-5xl mx-auto">
+      <h1 className="h2-bold">Update Product</h1>
+      <ProductForm type="Update" product={product} productId={product.id} />
     </div>
   );
 };
 
-export default EditProductPage;
+export default UpdateProductPage;

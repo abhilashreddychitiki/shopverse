@@ -148,3 +148,14 @@
     @apply bg-background text-foreground transition-colors duration-300;
   }
 }
+
+/* Uploadthing button text override*/
+html.dark .upload-field .text-white,
+html.dark .uploadthing-button .text-white {
+  color: #ffffff !important;
+}
+
+.upload-field .text-white,
+.uploadthing-button .text-white {
+  color: #000 !important;
+}
