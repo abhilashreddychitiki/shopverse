@@ -9,16 +9,15 @@ export const metadata: Metadata = {
   title: "Order Details",
 };
 
-export default async function OrderPage({
-  params,
-}: {
-  params: { id: string };
+export default async function OrderPage(props: {
+  params: Promise<{ id: string }>;
 }) {
   const session = await auth();
   if (!session) {
     redirect("/sign-in");
   }
 
+  const params = await props.params;
   const order = await getOrderById(params.id);
   if (!order) {
     return (

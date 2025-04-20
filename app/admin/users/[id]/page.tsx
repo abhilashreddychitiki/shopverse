@@ -1,13 +1,14 @@
-import { Metadata } from 'next';
-import { requireAdmin } from '@/lib/auth-guard';
+import { Metadata } from "next";
+import { requireAdmin } from "@/lib/auth-guard";
 
 export const metadata: Metadata = {
-  title: 'User Details',
+  title: "User Details",
 };
 
-const UserDetailsPage = async ({ params }: { params: { id: string } }) => {
+const UserDetailsPage = async (props: { params: Promise<{ id: string }> }) => {
   await requireAdmin();
-  
+  const params = await props.params;
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">User Details</h1>
