@@ -1,21 +1,28 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guard";
+import { getUserById } from "@/lib/actions/user.actions";
+import UserForm from "./user-form";
 
 export const metadata: Metadata = {
-  title: "User Details",
+  title: "Update User",
 };
 
-const UserDetailsPage = async (props: { params: Promise<{ id: string }> }) => {
+const UpdateUserPage = async (props: { params: Promise<{ id: string }> }) => {
   await requireAdmin();
   const params = await props.params;
+  const { id } = params;
+
+  const user = await getUserById(id);
+
+  if (!user) return notFound();
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">User Details</h1>
-      <p>User ID: {params.id}</p>
-      <p>User details page coming soon...</p>
+    <div className="space-y-8 max-w-lg mx-auto">
+      <h1 className="h2-bold">Update User</h1>
+      <UserForm user={user} />
     </div>
   );
 };
 
-export default UserDetailsPage;
+export default UpdateUserPage;

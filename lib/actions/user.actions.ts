@@ -7,6 +7,7 @@ import {
   signUpFormSchema,
   shippingAddressSchema,
   paymentMethodSchema,
+  updateUserSchema,
 } from "../validator";
 import { prisma } from "@/db/prisma";
 import { hashSync } from "bcrypt-ts-edge";
@@ -223,6 +224,41 @@ export async function deleteUser(userId: string) {
     return { success: true, message: "User deleted successfully" };
   } catch (error) {
     console.error("Error deleting user:", error);
+    return { success: false, message: formatError(error) };
+  }
+}
+
+// Update User (Admin)
+export async function updateUser(data: z.infer<typeof updateUserSchema>) {
+  try {
+    // Validate data
+    const validatedData = updateUserSchema.parse(data);
+
+    // Check if user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: validatedData.id },
+    });
+
+    if (!userExists) {
+      return { success: false, message: "User not found" };
+    }
+
+    // Update user
+    await prisma.user.update({
+      where: { id: validatedData.id },
+      data: {
+        name: validatedData.name,
+        role: validatedData.role,
+      },
+    });
+
+    // Revalidate paths
+    revalidatePath(`/admin/users/${validatedData.id}`);
+    revalidatePath("/admin/users");
+
+    return { success: true, message: "User updated successfully" };
+  } catch (error) {
+    console.error("Error updating user:", error);
     return { success: false, message: formatError(error) };
   }
 }
