@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { compareSync } from "bcrypt-ts-edge";
 import type { NextAuthConfig } from "next-auth";
 import NextAuth from "next-auth";
@@ -7,6 +5,21 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { Pool } from "@neondatabase/serverless";
 import { cookies } from "next/headers";
 import { prisma } from "@/db/prisma";
+import { NextRequest } from "next/server";
+
+// Extend the User type to include role
+declare module "next-auth" {
+  interface User {
+    role?: string | null;
+  }
+
+  interface Session {
+    user: User & {
+      id: string;
+      role?: string | null;
+    };
+  }
+}
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 
@@ -62,7 +75,7 @@ export const config = {
     }),
   ],
   callbacks: {
-    authorized({ request, auth }: any) {
+    authorized({ request, auth }: { request: NextRequest; auth: any }) {
       // Array of regex patterns of protected paths
       const protectedPaths = [
         /\/shipping-address/,
@@ -89,7 +102,7 @@ export const config = {
       }
       return session;
     },
-    async jwt({ token, user, trigger, session }: any) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         // Assign user properties to the token
         token.id = user.id;

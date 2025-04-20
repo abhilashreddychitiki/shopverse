@@ -47,7 +47,7 @@ export async function getAllProducts({
   category: string;
 }) {
   // Build where conditions based on filters
-  const where: any = {};
+  const where: Record<string, any> = {};
 
   // Add name search if query is provided
   if (query) {
@@ -110,7 +110,13 @@ export async function deleteProduct(productId: string) {
 }
 
 // Create Product
-export async function createProduct(data: any) {
+export async function createProduct(
+  data: z.infer<typeof insertProductSchema> & {
+    isFeatured?: boolean;
+    banner?: string | null;
+    images?: string[];
+  }
+) {
   try {
     // Validate and create product
     const product = insertProductSchema.parse(data);
@@ -140,7 +146,13 @@ export async function createProduct(data: any) {
 }
 
 // Update Product
-export async function updateProduct(data: any) {
+export async function updateProduct(
+  data: z.infer<typeof updateProductSchema> & {
+    isFeatured?: boolean;
+    banner?: string | null;
+    images?: string[];
+  }
+) {
   try {
     // Validate and find product
     const validatedData = updateProductSchema.parse(data);

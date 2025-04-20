@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-wrapper-object-types */
 import { z } from "zod";
 import {
   cartItemSchema,
@@ -10,10 +9,10 @@ import {
   paymentResultSchema,
 } from "@/lib/validator";
 export type Product = z.infer<typeof insertProductSchema> & {
-  id: string;
-  createdAt: Date;
-  rating: string;
-  numReviews: number;
+  id?: string;
+  createdAt?: Date;
+  rating?: number | string | any;
+  numReviews?: number;
 };
 export type Cart = z.infer<typeof insertCartSchema>;
 export type CartItem = z.infer<typeof cartItemSchema>;

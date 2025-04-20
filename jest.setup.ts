@@ -1,2 +1,2 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
+// We need to use require here for dotenv
 require("dotenv").config();

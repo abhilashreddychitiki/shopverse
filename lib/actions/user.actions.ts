@@ -15,7 +15,7 @@ import { z } from "zod";
 import { ShippingAddress } from "@/types";
 
 export async function signInWithCredentials(
-  prevState: unknown,
+  _prevState: unknown,
   formData: FormData
 ) {
   try {
@@ -33,7 +33,7 @@ export async function signInWithCredentials(
 export async function signOutUser() {
   await signOut();
 }
-export async function signUp(prevState: unknown, formData: FormData) {
+export async function signUp(_prevState: unknown, formData: FormData) {
   try {
     const user = signUpFormSchema.parse({
       name: formData.get("name"),

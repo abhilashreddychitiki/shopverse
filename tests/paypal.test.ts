@@ -1,5 +1,10 @@
 import { generateAccessToken, paypal } from "../lib/paypal";
 
+// Add Jest types
+declare const test: (name: string, fn: () => void) => void;
+declare const expect: any;
+declare const jest: any;
+
 // Generate a PayPal access token
 test("generates a PayPal access token", async () => {
   const tokenResponse = await generateAccessToken();
@@ -11,7 +16,8 @@ test("generates a PayPal access token", async () => {
 
 // Create a PayPal order
 test("creates a PayPal order", async () => {
-  const token = await generateAccessToken();
+  // We don't need to use the token directly as it's used internally by createOrder
+  await generateAccessToken();
   const price = 10.0; // Example price for testing
 
   const orderResponse = await paypal.createOrder(price);
