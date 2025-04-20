@@ -42,7 +42,18 @@ export default async function OrderPage({
   return (
     <div className="container mx-auto py-8">
       <OrderDetailsTable
-        order={order}
+        order={{
+          ...order,
+          shippingAddress: order.shippingAddress as {
+            country: string;
+            fullName: string;
+            streetAddress: string;
+            city: string;
+            postalCode: string;
+            lat?: number;
+            lng?: number;
+          },
+        }}
         paypalClientId={process.env.PAYPAL_CLIENT_ID || "sb"}
         isAdmin={isAdmin}
       />

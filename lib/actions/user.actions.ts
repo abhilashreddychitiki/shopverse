@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 "use server";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { signIn, signOut, auth } from "@/auth";
@@ -11,6 +12,7 @@ import { prisma } from "@/db/prisma";
 import { hashSync } from "bcrypt-ts-edge";
 import { formatError } from "../utils";
 import { z } from "zod";
+import { ShippingAddress } from "@/types";
 
 export async function signInWithCredentials(
   prevState: unknown,
