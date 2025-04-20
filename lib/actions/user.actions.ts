@@ -13,6 +13,8 @@ import { hashSync } from "bcrypt-ts-edge";
 import { formatError } from "../utils";
 import { z } from "zod";
 import { ShippingAddress } from "@/types";
+import { PAGE_SIZE } from "@/lib/constants";
+import { revalidatePath } from "next/cache";
 
 export async function signInWithCredentials(
   _prevState: unknown,
@@ -167,6 +169,60 @@ export async function updateProfile({ name }: { name: string }) {
       message: "Profile updated successfully",
     };
   } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+// Get all users
+export async function getAllUsers({
+  limit = PAGE_SIZE,
+  page,
+}: {
+  limit?: number;
+  page: number;
+}) {
+  const data = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    skip: (page - 1) * limit,
+  });
+
+  const dataCount = await prisma.user.count();
+
+  return {
+    data,
+    totalPages: Math.ceil(dataCount / limit),
+  };
+}
+
+// Delete User (Admin)
+export async function deleteUser(userId: string) {
+  try {
+    // Check if the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    // Don't allow deleting admin users
+    if (user.role === "admin") {
+      return { success: false, message: "Cannot delete admin users" };
+    }
+
+    // Delete the user
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    // Revalidate the admin users page
+    revalidatePath("/admin/users");
+
+    return { success: true, message: "User deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting user:", error);
     return { success: false, message: formatError(error) };
   }
 }
