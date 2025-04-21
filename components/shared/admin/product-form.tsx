@@ -18,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import slugify from "slugify";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { z } from "zod";
 import { SubmitHandler } from "react-hook-form";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,45 +48,47 @@ const ProductForm = ({
   const onSubmit: SubmitHandler<z.infer<typeof insertProductSchema>> = async (
     values
   ) => {
-    if (type === "Create") {
-      // The images are already in the values object from the form
-      const productData = {
-        ...values,
-        // isFeatured and banner are already in the values object from the form
-      };
+    startTransition(async () => {
+      if (type === "Create") {
+        // The images are already in the values object from the form
+        const productData = {
+          ...values,
+          // isFeatured and banner are already in the values object from the form
+        };
 
-      const res = await createProduct(productData);
+        const res = await createProduct(productData);
 
-      if (!res.success) {
-        toast.error(res.message);
-      } else {
-        toast.success(res.message);
-        router.push(`/admin/products`);
-        router.refresh();
+        if (!res.success) {
+          toast.error(res.message);
+        } else {
+          toast.success(res.message);
+          router.push(`/admin/products`);
+          router.refresh();
+        }
       }
-    }
-    if (type === "Update") {
-      if (!productId) {
-        router.push(`/admin/products`);
-        return;
+      if (type === "Update") {
+        if (!productId) {
+          router.push(`/admin/products`);
+          return;
+        }
+
+        // The images are already in the values object from the form
+        const productData = {
+          ...values,
+          // isFeatured and banner are already in the values object from the form
+        };
+
+        const res = await updateProduct({ ...productData, id: productId });
+
+        if (!res.success) {
+          toast.error(res.message);
+        } else {
+          toast.success(res.message);
+          router.push(`/admin/products`);
+          router.refresh();
+        }
       }
-
-      // The images are already in the values object from the form
-      const productData = {
-        ...values,
-        // isFeatured and banner are already in the values object from the form
-      };
-
-      const res = await updateProduct({ ...productData, id: productId });
-
-      if (!res.success) {
-        toast.error(res.message);
-      } else {
-        toast.success(res.message);
-        router.push(`/admin/products`);
-        router.refresh();
-      }
-    }
+    });
   };
 
   const form = useForm<z.infer<typeof insertProductSchema>>({
@@ -346,13 +348,25 @@ const ProductForm = ({
                 )}
               />
               {isFeatured && banner && (
-                <Image
-                  src={banner}
-                  alt="banner image"
-                  className="w-full object-cover object-center rounded-sm"
-                  width={1920}
-                  height={680}
-                />
+                <div className="relative">
+                  <Image
+                    src={banner}
+                    alt="banner image"
+                    className="w-full object-cover object-center rounded-sm"
+                    width={1920}
+                    height={680}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      form.setValue("banner", null);
+                      toast.success("Banner image removed");
+                    }}
+                    className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-2 hover:bg-red-700"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               )}
               {isFeatured && !banner && (
                 <UploadButton
@@ -406,8 +420,8 @@ const ProductForm = ({
             {isPending
               ? "Saving..."
               : type === "Create"
-              ? "Create Product"
-              : "Update Product"}
+                ? "Create Product"
+                : "Update Product"}
           </Button>
         </div>
       </form>
