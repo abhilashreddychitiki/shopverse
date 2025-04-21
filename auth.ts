@@ -2,6 +2,7 @@ import { compareSync } from "bcrypt-ts-edge";
 import type { NextAuthConfig } from "next-auth";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { Pool } from "@neondatabase/serverless";
 import { cookies } from "next/headers";
 import { prisma } from "@/db/prisma";
@@ -33,6 +34,19 @@ export const config = {
     maxAge: 30 * 24 * 60 * 60,
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          role: "user", // Default role for Google sign-in
+        };
+      },
+    }),
     CredentialsProvider({
       credentials: {
         email: { type: "email" },
@@ -102,11 +116,40 @@ export const config = {
       }
       return session;
     },
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session, account }) {
       if (user) {
         // Assign user properties to the token
         token.id = user.id;
         token.role = user.role;
+
+        // Handle OAuth sign-in
+        if (account?.provider === "google") {
+          try {
+            // Check if user exists in database
+            const existingUser = await prisma.user.findUnique({
+              where: { email: user.email! },
+            });
+
+            if (!existingUser) {
+              // Create new user if they don't exist
+              const newUser = await prisma.user.create({
+                data: {
+                  email: user.email!,
+                  name: user.name!,
+                  role: "user",
+                },
+              });
+              token.id = newUser.id;
+              token.role = newUser.role;
+            } else {
+              // Use existing user data
+              token.id = existingUser.id;
+              token.role = existingUser.role;
+            }
+          } catch (error) {
+            console.error("Error handling OAuth sign-in:", error);
+          }
+        }
 
         if (trigger === "signIn" || trigger === "signUp") {
           const cookiesObject = await cookies();
@@ -120,13 +163,13 @@ export const config = {
             if (sessionCart) {
               // Overwrite any existing user cart
               await prisma.cart.deleteMany({
-                where: { userId: user.id },
+                where: { userId: token.id as string },
               });
 
               // Assign the guest cart to the logged-in user
               await prisma.cart.update({
                 where: { id: sessionCart.id },
-                data: { userId: user.id },
+                data: { userId: token.id as string },
               });
             }
           }

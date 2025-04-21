@@ -12,6 +12,8 @@ import { APP_NAME } from "@/lib/constants";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import SignUpForm from "./credentials-signin-form";
+import GoogleSignInButton from "@/components/auth/google-signin-button";
+import OrDivider from "@/components/auth/or-divider";
 
 export const metadata: Metadata = {
   title: "Sign Up",
@@ -51,6 +53,8 @@ const SignUp = async (props: {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <GoogleSignInButton callbackUrl={callbackUrl || "/"} />
+          <OrDivider />
           <SignUpForm />
         </CardContent>
       </Card>
