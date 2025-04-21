@@ -1,6 +1,6 @@
 import Pagination from "@/components/shared/pagination";
 import ProductCard from "@/components/shared/product/product-card";
-import SortOptions from "@/components/shared/search/sort-options";
+import SortDropdown from "@/components/shared/search/sort-dropdown";
 import { Button } from "@/components/ui/button";
 import {
   getAllCategories,
@@ -8,8 +8,6 @@ import {
 } from "@/lib/actions/product.actions";
 import Link from "next/link";
 import { Metadata } from "next";
-
-const sortOrders = ["newest", "lowest", "highest", "rating"];
 
 const prices = [
   {
@@ -242,18 +240,14 @@ const SearchPage = async (props: {
               </Button>
             ) : null}
           </div>
-          <div>
-            Sort by{" "}
-            {sortOrders.map((s) => (
-              <Link
-                key={s}
-                className={`mx-2 ${sort === s && "font-bold"}`}
-                href={getFilterUrl({ s })}
-              >
-                {s}
-              </Link>
-            ))}
-          </div>
+          <SortDropdown
+            sort={sort}
+            q={q}
+            category={category}
+            price={price}
+            rating={rating}
+            page={page}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
